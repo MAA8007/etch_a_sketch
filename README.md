@@ -21,6 +21,9 @@ This project is a simple web-based Etch-a-Sketch game. It allows users to create
 - Grid creation and event handling are managed in JavaScript.
 - The layout and styling are defined in CSS.
 
+## Screenshot
+<img width="578" alt="image" src="https://github.com/MAA8007/etch_a_sketch/assets/106858270/2604c2d0-6dbb-472f-a4f6-fb6e408d6eaf">
+
 ---
 
 Enjoy creating pixel art with this simple Etch-a-Sketch game!
