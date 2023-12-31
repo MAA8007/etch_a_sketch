@@ -7,75 +7,72 @@
   </head>
   <style>
     body {
-        display: flex;
-        flex-direction: column;
-        align-items: center; 
-        text-align: center;
-
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
     }
 
     .container {
-        margin-top: 20px;
+      margin-top: 20px;
+      max-width: 90vw;
+      max-height: 90vh;
+      display: grid;
     }
 
     .l1 {
-        margin-top: 25px;
+      margin-top: 25px;
     }
 
     .l2 {
-        margin-top: 15px;
+      margin-top: 15px;
     }
-
-
-</style>
+  </style>
   <body>
-      <label class="l2" for="input">Choose the Number of Squares</label>
-      <input type="range" id="inputField" min="1" max="100">
-      <label class="l1" for="checkbox">Eraser</label>
-    <input id="checkbox" type="checkbox">
+    <label class="l2" for="input">Choose the Number of Squares</label>
+    <input type="range" id="inputField" min="1" max="100" />
+    <label class="l1" for="checkbox">Eraser</label>
+    <input id="checkbox" type="checkbox" />
 
     <div class="container"></div>
-    
+
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const container = document.getElementsByClassName("container")[0];
-            container.innerHTML = '';
-            const inputField = document.getElementById("inputField");
-            const submitButton = document.getElementById("submitButton");
-            const checkbox = document.getElementById("checkbox");
-    
-            function createGrid(size) {
-                container.innerHTML = '';
-                container.style.display = "grid";
-                container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-                container.style.gridTemplateRows = `repeat(${size}, 1fr)`;
-                container.style.width = "500px";
-                container.style.height = "500px";
-    
-                for (let i = 0; i < size * size; i++) {
-                    const div = document.createElement("div");
-                    div.style.border = "1px solid black";
-                    div.style.background = "white";
-                    div.style.aspectRatio = "1";
-                    container.appendChild(div);
-    
-                    div.addEventListener("mouseover", function () {
-                        if (checkbox.checked) {
-                            div.style.background = "white"; 
-                        } else {
-                            div.style.background = "black"; 
-                        }
-                    });
-                }
-            }
-            createGrid(30);
-            inputField.addEventListener("input", () => {
-                createGrid(inputField.value);
+      document.addEventListener("DOMContentLoaded", () => {
+        const container = document.getElementsByClassName("container")[0];
+        container.innerHTML = "";
+        const inputField = document.getElementById("inputField");
+        const submitButton = document.getElementById("submitButton");
+        const checkbox = document.getElementById("checkbox");
+
+        function createGrid(size) {
+          container.innerHTML = "";
+          container.style.display = "grid";
+          container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+          container.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+          container.style.width = "500px";
+          container.style.height = "500px";
+
+          for (let i = 0; i < size * size; i++) {
+            const div = document.createElement("div");
+            div.style.border = "1px solid black";
+            div.style.background = "white";
+            div.style.aspectRatio = "1";
+            container.appendChild(div);
+
+            div.addEventListener("mouseover", function () {
+              if (checkbox.checked) {
+                div.style.background = "white";
+              } else {
+                div.style.background = "black";
+              }
             });
+          }
+        }
+        createGrid(30);
+        inputField.addEventListener("input", () => {
+          createGrid(inputField.value);
         });
+      });
     </script>
-
-
-
   </body>
 </html>
