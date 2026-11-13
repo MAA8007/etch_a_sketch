@@ -8,7 +8,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23d81e1e'/%3E%3Crect x='6' y='6' width='20' height='15' rx='2' fill='%23cbccc6'/%3E%3Ccircle cx='8' cy='26' r='3' fill='%23fff'/%3E%3Ccircle cx='24' cy='26' r='3' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Silkscreen&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --page-1: #f7efe6;
@@ -21,6 +21,7 @@
       --screen: #c9cac3;
       --line: #2e2f33;
       --card: #fffaf4;
+      --accent: #d81e1e;
     }
     * { box-sizing: border-box; }
     html { height: 100%; }
@@ -33,11 +34,6 @@
       gap: 22px; padding: 24px 16px 32px;
       -webkit-tap-highlight-color: transparent;
     }
-
-    /* ---------- Mode switch ---------- */
-    .modes { display: inline-flex; background: #fff; border-radius: 999px; padding: 4px; box-shadow: 0 6px 18px -10px rgba(0,0,0,.3), 0 0 0 1px rgba(0,0,0,.06); }
-    .modes a { padding: 7px 18px; border-radius: 999px; text-decoration: none; color: var(--ink); font-weight: 600; font-size: 14px; }
-    .modes a[aria-current="page"] { background: var(--red); color: #fff; }
 
     /* ---------- The toy ---------- */
     .toy {
@@ -75,8 +71,8 @@
         0 1px 0 rgba(255,255,255,.35);
       overflow: hidden; touch-action: none; cursor: crosshair;
     }
-    canvas { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity .7s ease; }
-    canvas.fading { opacity: 0; }
+    .screen canvas { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity .7s ease; }
+    .screen canvas.fading { opacity: 0; }
     .stylus {
       position: absolute; left: 0; top: 0; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px;
       border-radius: 50%; background: rgba(40,40,44,.55); pointer-events: none;
@@ -151,16 +147,18 @@
 
     @media (prefers-reduced-motion: reduce) {
       .toy.shaking { animation-duration: .2s; }
-      canvas { transition-duration: .2s; }
+      .screen canvas { transition-duration: .2s; }
       .card { animation: none; }
     }
   </style>
+  <link rel="stylesheet" href="shared.css">
 </head>
 <body>
   <nav class="modes" aria-label="Mode">
     <a href="./">Pixels</a>
     <a href="toy.html" aria-current="page">Toy</a>
   </nav>
+  <div class="thread" id="thread" hidden></div>
 
   <div class="toy" id="toy">
     <div class="logo">Etch A Sketch</div>
@@ -177,41 +175,14 @@
 
   <div class="actions">
     <button class="btn" id="shakeBtn">Shake to erase</button>
+    <button class="btn" id="saveBtn">Save</button>
     <button class="btn primary" id="shareBtn">Send this drawing</button>
   </div>
   <p class="hint">Draw with <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> (hold <kbd>Shift</kbd> for fine lines), drag the knobs, or draw on the screen. On a phone, shake it to erase.</p>
 
-  <!-- Opening a shared drawing -->
-  <div class="overlay" id="intro" hidden>
-    <div class="card">
-      <h2>For you</h2>
-      <p id="introText">Someone drew this for you.</p>
-      <p class="note" id="introNote" hidden></p>
-      <div class="row"><button class="btn primary" id="watchBtn">Watch it</button></div>
-    </div>
-  </div>
-
-  <!-- Creating a share link -->
-  <div class="overlay" id="shareBox" hidden>
-    <div class="card">
-      <h2>Send it</h2>
-      <p>They'll watch it draw itself, line by line.</p>
-      <textarea id="noteInput" rows="2" maxlength="140" placeholder="Add a note (optional)"></textarea>
-      <div id="linkArea" hidden>
-        <input id="linkOut" readonly>
-      </div>
-      <div class="row">
-        <button class="btn" id="cancelShare">Close</button>
-        <button class="btn primary" id="makeLink">Create link</button>
-        <button class="btn primary" id="copyLink" hidden>Copy link</button>
-        <button class="btn" id="nativeShare" hidden>Share…</button>
-      </div>
-      <p class="small" id="shareMsg"></p>
-    </div>
-  </div>
-
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="shared.js"></script>
   <script>
   (function () {
     "use strict";
@@ -280,7 +251,7 @@
     const KEYMAP = { ArrowLeft: "l", a: "l", A: "l", ArrowRight: "r", d: "r", D: "r", ArrowUp: "u", w: "u", W: "u", ArrowDown: "d", s: "d", S: "d" };
     let fine = false;
     addEventListener("keydown", e => {
-      if (e.target.closest("textarea, input")) return;
+      if (e.target.closest("textarea, input") || document.querySelector(".overlay:not([hidden])")) return;
       fine = e.shiftKey;
       const k = KEYMAP[e.key];
       if (k) { keys.add(k); e.preventDefault(); }
@@ -366,71 +337,8 @@
       });
     }
 
-    /* ---------- Share links: drawing + note packed into the URL ---------- */
-    function pushVarint(out, n) { while (n > 127) { out.push((n & 127) | 128); n >>>= 7; } out.push(n); }
-    function readVarint(buf, st) { let n = 0, s = 0, b; do { b = buf[st.i++]; n |= (b & 127) << s; s += 7; } while (b & 128); return n >>> 0; }
-    const zig = n => (n << 1) ^ (n >> 31), unzig = n => (n >>> 1) ^ -(n & 1);
-    const toB64 = bytes => { let s = ""; bytes.forEach(b => s += String.fromCharCode(b)); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
-    const fromB64 = str => { str = str.replace(/-/g, "+").replace(/_/g, "/"); const s = atob(str); return Uint8Array.from(s, c => c.charCodeAt(0)); };
-    async function pipe(bytes, Stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new Stream("deflate-raw"))).arrayBuffer()); }
-
-    async function encode(points, note) {
-      const out = [1];
-      const msg = new TextEncoder().encode(note || "");
-      pushVarint(out, msg.length); msg.forEach(b => out.push(b));
-      pushVarint(out, points.length);
-      let px = 0, py = 0;
-      for (const [x, y] of points) { pushVarint(out, zig(x - px)); pushVarint(out, zig(y - py)); px = x; py = y; }
-      const raw = new Uint8Array(out);
-      if (window.CompressionStream) { try { return "z" + toB64(await pipe(raw, CompressionStream)); } catch (e) {} }
-      return "r" + toB64(raw);
-    }
-    async function decode(code) {
-      let bytes = fromB64(code.slice(1));
-      if (code[0] === "z") bytes = await pipe(bytes, DecompressionStream);
-      if (bytes[0] !== 1) throw 0;
-      const st = { i: 1 };
-      const mlen = readVarint(bytes, st);
-      const note = new TextDecoder().decode(bytes.slice(st.i, st.i + mlen)).slice(0, 140); st.i += mlen;
-      const n = readVarint(bytes, st), pts = [];
-      let x = 0, y = 0;
-      for (let i = 0; i < n && st.i < bytes.length; i++) { x += unzig(readVarint(bytes, st)); y += unzig(readVarint(bytes, st)); pts.push([clamp(x, M, W - M), clamp(y, M, H - M)]); }
-      return { note, pts };
-    }
-
-    const shareBox = document.getElementById("shareBox");
-    const noteInput = document.getElementById("noteInput");
-    const linkArea = document.getElementById("linkArea");
-    const linkOut = document.getElementById("linkOut");
-    const makeLink = document.getElementById("makeLink");
-    const copyLink = document.getElementById("copyLink");
-    const nativeShare = document.getElementById("nativeShare");
-    const shareMsg = document.getElementById("shareMsg");
-
-    document.getElementById("shareBtn").addEventListener("click", () => {
-      if (path.length < 2) { toast("Draw something first."); return; }
-      linkArea.hidden = true; copyLink.hidden = true; nativeShare.hidden = true; makeLink.hidden = false; shareMsg.textContent = "";
-      shareBox.hidden = false; noteInput.focus();
-    });
-    document.getElementById("cancelShare").addEventListener("click", () => { shareBox.hidden = true; });
-    shareBox.addEventListener("click", e => { if (e.target === shareBox) shareBox.hidden = true; });
-    makeLink.addEventListener("click", async () => {
-      const code = await encode(path, noteInput.value.trim());
-      const url = location.origin + location.pathname + "#d=" + code;
-      linkOut.value = url; linkArea.hidden = false; makeLink.hidden = true; copyLink.hidden = false;
-      if (navigator.share) nativeShare.hidden = false;
-      shareMsg.textContent = "The whole drawing lives in the link, so nothing is uploaded anywhere.";
-      linkOut.select();
-    });
-    copyLink.addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(linkOut.value); }
-      catch (e) { linkOut.select(); document.execCommand("copy"); }
-      toast("Link copied.");
-    });
-    nativeShare.addEventListener("click", () => { navigator.share({ title: "I drew you something", url: linkOut.value }).catch(() => {}); });
-
     /* ---------- Replay a shared drawing ---------- */
-    function replay(pts) {
+    function replay(pts, done) {
       busy = true;
       const lens = [0];
       for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
@@ -457,39 +365,24 @@
         else {
           redraw(); const last = pts[pts.length - 1]; pos = { x: last[0], y: last[1] }; placeStylus();
           busy = false;
-          setTimeout(() => toast("Shake it to clear, then draw one back."), 600);
+          if (done) done();
         }
       }
       requestAnimationFrame(frame);
-    }
-
-    /* ---------- Toast ---------- */
-    let toastTimer;
-    function toast(msg) {
-      const t = document.getElementById("toast");
-      t.textContent = msg; t.classList.add("show");
-      clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
     }
 
     /* ---------- Start ---------- */
     setupCanvas(); placeStylus();
     addEventListener("resize", () => { setupCanvas(); placeStylus(); });
 
-    const m = location.hash.match(/^#d=([zr][A-Za-z0-9_-]+)$/);
-    if (m) {
-      decode(m[1]).then(({ note, pts }) => {
-        if (pts.length < 2) return;
-        const intro = document.getElementById("intro");
-        if (note) { const el = document.getElementById("introNote"); el.textContent = "“" + note + "”"; el.hidden = false; }
-        intro.hidden = false;
-        document.getElementById("watchBtn").addEventListener("click", () => {
-          intro.hidden = true; askMotion();
-          history.replaceState(null, "", location.pathname);
-          replay(pts);
-        }, { once: true });
-      }).catch(() => toast("That link looks broken."));
-    }
-
+    Etch.init({
+      kind: "toy",
+      isBusy: () => busy,
+      getEntry: () => path.length < 2 ? null : { kind: "toy", pts: path.map(p => p.slice()) },
+      play: (e, done) => replay(e.pts, done),
+      clearForReply: shake,
+      onOpen: askMotion,
+    });
   })();
   </script>
 </body>

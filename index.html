@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Etch-a-Sketch</title>
-  <meta name="description" content="Pixel art in the browser. Draw on the grid and send a drawing that pops in pixel by pixel.">
+  <meta name="description" content="Pixel art in the browser. Draw on the grid or turn a photo into pixels, and send a drawing that pops in pixel by pixel.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ff4d6d' d='M1 1h2v1H1zM5 1h2v1H5zM0 2h8v2H0zM1 4h6v1H1zM2 5h4v1H2zM3 6h2v1H3z'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Pacifico&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #fff4ef;
@@ -39,10 +39,6 @@
       text-shadow: 3px 3px 0 var(--accent);
     }
 
-    .modes { display: inline-flex; background: #fff; border-radius: 999px; padding: 4px; box-shadow: 0 6px 18px -10px rgba(160,40,70,.4), 0 0 0 1px var(--line); }
-    .modes a { padding: 7px 18px; border-radius: 999px; text-decoration: none; color: var(--ink); font-weight: 600; font-size: 14px; }
-    .modes a[aria-current="page"] { background: var(--accent); color: #fff; }
-
     .app { width: min(100%, 600px); display: flex; flex-direction: column; gap: 14px; }
 
     .board-wrap {
@@ -55,7 +51,7 @@
       60% { transform: rotate(-1deg); } 80% { transform: rotate(.6deg); }
     }
     .board { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--board); touch-action: none; cursor: crosshair; }
-    .board canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+    .board canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
     /* ---------- Toolbar ---------- */
     .panel {
@@ -80,8 +76,9 @@
     .seg button { background: transparent; padding: 7px 11px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; }
     .seg button[aria-pressed="true"] { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.12); font-weight: 600; }
     .seg svg { width: 14px; height: 14px; shape-rendering: crispEdges; }
-    .chip { background: #f6eef0; padding: 8px 12px; border-radius: 10px; }
+    .chip { background: #f6eef0; padding: 8px 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; }
     .chip[aria-pressed="true"] { background: var(--ink); color: #fff; }
+    .chip svg { width: 14px; height: 14px; }
     select.chip { appearance: none; -webkit-appearance: none; padding-right: 28px;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0h10L5 6z' fill='%238a7b80'/%3E%3C/svg%3E");
       background-repeat: no-repeat; background-position: right 10px center; }
@@ -90,8 +87,7 @@
     .btn:hover { transform: translateY(-1px); }
     .btn:disabled { opacity: .4; cursor: default; transform: none; }
     .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 8px 18px -10px var(--accent); }
-    .btn.dark { background: var(--ink); color: #fff; }
-    .actions { display: flex; gap: 8px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .actions .primary { margin-left: auto; }
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -109,13 +105,11 @@
       box-shadow: 0 30px 60px -20px rgba(80,20,40,.45); animation: pop .35s cubic-bezier(.2,.8,.2,1);
     }
     @keyframes pop { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
-    .card .pixel-heart { width: 44px; height: 44px; margin: 0 auto 10px; display: block; animation: beat 1.2s ease-in-out infinite; }
-    @keyframes beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.15); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
     .card h2 { font-family: "Silkscreen", monospace; font-weight: 400; font-size: 24px; margin: 0 0 8px; }
     .card p { margin: 0 0 18px; color: var(--muted); line-height: 1.55; }
     .card .note { font-size: 17px; color: var(--ink); }
     .card textarea, .card input {
-      width: 100%; font: inherit; font-size: 15px; padding: 12px 14px; border-radius: 12px;
+      width: 100%; font: inherit; padding: 12px 14px; border-radius: 12px;
       border: 1px solid rgba(0,0,0,.14); background: #fff; color: var(--ink); resize: none; margin-bottom: 12px;
     }
     .card .row { justify-content: center; }
@@ -128,26 +122,19 @@
     }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-    .floaty { position: fixed; bottom: -40px; z-index: 15; pointer-events: none; width: 28px; height: 28px; animation: rise linear forwards; }
-    @keyframes rise {
-      0% { transform: translate(0, 0) scale(.6); opacity: 0; }
-      10% { opacity: 1; }
-      100% { transform: translate(var(--drift), -110vh) scale(1); opacity: 0; }
-    }
-
     @media (hover: none) {
       #hoverBtn, .hint { display: none; }
     }
     @media (max-width: 480px) {
-      .swatches { grid-template-columns: repeat(6, 1fr); }
-      .seg button span { display: none; }
+      .swatches { grid-template-columns: repeat(8, 1fr); }
+      .seg button span, .long { display: none; }
       .seg button { padding: 8px 12px; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .board-wrap.wobble, .card, .card .pixel-heart { animation: none; }
-      .floaty { display: none; }
+      .board-wrap.wobble, .card { animation: none; }
     }
   </style>
+  <link rel="stylesheet" href="shared.css">
 </head>
 <body>
   <h1>Etch-a-Sketch</h1>
@@ -155,6 +142,7 @@
     <a href="./" aria-current="page">Pixels</a>
     <a href="toy.html">Toy</a>
   </nav>
+  <div class="thread" id="thread" hidden></div>
 
   <main class="app">
     <div class="board-wrap" id="boardWrap">
@@ -174,6 +162,8 @@
           <button data-tool="eraser" aria-pressed="false" title="Eraser (E)"><svg viewBox="0 0 7 7"><path d="M3 0h1v1h1v1h1v1h1v1H6v1H5v1H4v1H2V6H1V5H0V4h1V3h1V2h1z" opacity=".35"/><path d="M0 4h1v1h1v1h1v1H2V6H1V5H0z"/></svg><span>Eraser</span></button>
         </div>
         <div class="row">
+          <button class="chip" id="photoBtn" title="Turn a photo into pixel art"><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path fill="currentColor" d="M0 2h2V1h4v1h2v6H0zM1 3v4h6V3z"/><path fill="currentColor" d="M3 4h2v2H3z"/></svg>Photo</button>
+          <input type="file" id="photoIn" accept="image/*" hidden>
           <select class="chip" id="sizeSel" aria-label="Grid size">
             <option value="16">16 × 16</option>
             <option value="24">24 × 24</option>
@@ -189,64 +179,36 @@
       <div class="actions">
         <button class="btn" id="undoBtn" disabled>Undo</button>
         <button class="btn" id="clearBtn">Clear</button>
-        <button class="btn primary" id="shareBtn">Send this drawing</button>
+        <button class="btn" id="saveBtn">Save</button>
+        <button class="btn primary" id="shareBtn">Send<span class="long"> this drawing</span></button>
       </div>
     </div>
 
-    <p class="hint">Move over the grid to draw, or click and drag with Hover draw off. Change the size and your drawing scales with it.<br>
-      <kbd>B</kbd> pen <kbd>R</kbd> rainbow <kbd>F</kbd> fill <kbd>E</kbd> eraser <kbd>G</kbd> grid <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo</p>
+    <p class="hint">Move over the grid to draw, or click and drag with Hover draw off. Photo turns a picture into pixel art you can draw on.<br>
+      <kbd>1</kbd>–<kbd>9</kbd> colours <kbd>B</kbd> pen <kbd>R</kbd> rainbow <kbd>F</kbd> fill <kbd>E</kbd> eraser <kbd>G</kbd> grid <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo</p>
   </main>
-
-  <!-- Opening a shared drawing -->
-  <div class="overlay" id="intro" hidden>
-    <div class="card">
-      <svg class="pixel-heart" viewBox="0 0 8 8" shape-rendering="crispEdges"><path fill="#ff4d6d" d="M1 1h2v1H1zM5 1h2v1H5zM0 2h8v2H0zM1 4h6v1H1zM2 5h4v1H2zM3 6h2v1H3z"/><path fill="#fff" opacity=".6" d="M1 2h1v1H1z"/></svg>
-      <h2>For you</h2>
-      <p id="introText">Someone made you a little drawing.</p>
-      <p class="note" id="introNote" hidden></p>
-      <div class="row"><button class="btn primary" id="watchBtn">Open it</button></div>
-    </div>
-  </div>
-
-  <!-- Creating a share link -->
-  <div class="overlay" id="shareBox" hidden>
-    <div class="card">
-      <h2>Send it</h2>
-      <p>They'll watch it appear, pixel by pixel.</p>
-      <textarea id="noteInput" rows="2" maxlength="140" placeholder="Add a note (optional)"></textarea>
-      <div id="linkArea" hidden><input id="linkOut" readonly></div>
-      <div class="row">
-        <button class="btn" id="cancelShare">Close</button>
-        <button class="btn primary" id="makeLink">Create link</button>
-        <button class="btn primary" id="copyLink" hidden>Copy link</button>
-        <button class="btn" id="nativeShare" hidden>Share…</button>
-      </div>
-      <p class="small" id="shareMsg"></p>
-    </div>
-  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="shared.js"></script>
   <script>
   (function () {
     "use strict";
 
-    // Index 0 is an empty cell.
-    const PAL = [null, "#2b2b33", "#ff4d6d", "#ff8fab", "#ffb38a", "#ffd166", "#06d6a0", "#4cc9f0", "#4361ee", "#9b5de5", "#8d5a3b", "#adb5bd", "#ffffff"];
-    const NAMES = ["", "Ink", "Red", "Pink", "Peach", "Yellow", "Mint", "Sky", "Blue", "Purple", "Brown", "Grey", "White"];
+    const { PAL, NAMES, PIXEL_BG: BG } = Etch;
     const RAINBOW = [2, 4, 5, 6, 7, 8, 9, 3];
-    const BG = "#fffdfb";
 
     const board = document.getElementById("board");
     const wrap = document.getElementById("boardWrap");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const undoBtn = document.getElementById("undoBtn");
+    const sizeSel = document.getElementById("sizeSel");
 
     let N = 32;
     let cells = new Uint8Array(N * N);
     let order = new Uint32Array(N * N);   // when each cell was last painted, for the replay
-    let tick = 0;
+    let tick = 0, photoTick = 0;          // cells painted at or before photoTick came from a photo
     let color = 2, tool = "pen", rainbowI = 0;
     let showGrid = true, hoverDraw = matchMedia("(hover: hover)").matches;
     let hoverCell = -1, busy = false;
@@ -259,19 +221,15 @@
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(S * dpr); canvas.height = Math.round(S * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      draw();
+      if (!busy) draw();
     }
-    function rect(i, c, scale) {
+    function rect(i, c) {
       const x = i % N, y = (i / N) | 0;
-      let x0 = edge(x), y0 = edge(y), w = edge(x + 1) - x0, h = edge(y + 1) - y0;
-      if (scale != null && scale < 1) {
-        const s = Math.max(scale, 0);
-        x0 += w * (1 - s) / 2; y0 += h * (1 - s) / 2; w *= s; h *= s;
-      }
-      ctx.fillStyle = PAL[c]; ctx.fillRect(x0, y0, w, h);
+      const x0 = edge(x), y0 = edge(y);
+      ctx.fillStyle = PAL[c]; ctx.fillRect(x0, y0, edge(x + 1) - x0, edge(y + 1) - y0);
     }
     function gridLines() {
-      if (!showGrid || N > 64) return;
+      if (!showGrid) return;
       ctx.fillStyle = "rgba(43,43,51,.07)";
       for (let i = 1; i < N; i++) { const p = edge(i); ctx.fillRect(p, 0, 1, S); ctx.fillRect(0, p, S, 1); }
     }
@@ -288,7 +246,7 @@
       gridLines(); hoverOutline();
     }
     let queued = false;
-    const requestDraw = () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; draw(); }); } };
+    const requestDraw = () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; if (!busy) draw(); }); } };
 
     /* ---------- Painting ---------- */
     function paint(i) {
@@ -329,15 +287,15 @@
     /* ---------- Undo ---------- */
     const history_ = [];
     function snapshot() {
-      history_.push({ N, cells: cells.slice(), order: order.slice(), tick });
+      history_.push({ N, cells: cells.slice(), order: order.slice(), tick, photoTick });
       if (history_.length > 60) history_.shift();
       undoBtn.disabled = false;
     }
     function undo() {
       if (busy || !history_.length) return;
       const s = history_.pop();
-      if (s.N !== N) { N = s.N; document.getElementById("sizeSel").value = String(N); }
-      cells = s.cells; order = s.order; tick = s.tick;
+      if (s.N !== N) { N = s.N; sizeSel.value = String(N); }
+      cells = s.cells; order = s.order; tick = s.tick; photoTick = s.photoTick;
       undoBtn.disabled = !history_.length;
       draw();
     }
@@ -349,12 +307,12 @@
       const x = Math.floor((e.clientX - r.left) / r.width * N), y = Math.floor((e.clientY - r.top) / r.height * N);
       return x < 0 || y < 0 || x >= N || y >= N ? -1 : y * N + x;
     };
-    let stroking = false, last = -1, changed = false;
-    function beginStroke() { snapshot(); stroking = true; last = -1; changed = false; }
+    let stroking = false, last = -1;
+    function beginStroke() { snapshot(); stroking = true; last = -1; }
     function endStroke() {
       if (!stroking) return;
       stroking = false; last = -1;
-      // Drop snapshots for strokes that didn't change anything (e.g. hovering over empty cells with the eraser).
+      // Drop snapshots for strokes that changed nothing (e.g. hovering over empty cells with the eraser).
       const s = history_[history_.length - 1];
       if (s && s.N === N && s.cells.every((v, i) => v === cells[i])) { history_.pop(); undoBtn.disabled = !history_.length; }
     }
@@ -405,14 +363,15 @@
     toolBtns.forEach(b => b.addEventListener("click", () => setTool(b.dataset.tool)));
 
     const gridBtn = document.getElementById("gridBtn"), hoverBtn = document.getElementById("hoverBtn");
-    function toggleGrid() { showGrid = !showGrid; gridBtn.setAttribute("aria-pressed", showGrid); draw(); }
+    hoverBtn.setAttribute("aria-pressed", hoverDraw);
+    function toggleGrid() { showGrid = !showGrid; gridBtn.setAttribute("aria-pressed", showGrid); if (!busy) draw(); }
     function toggleHover() { hoverDraw = !hoverDraw; hoverBtn.setAttribute("aria-pressed", hoverDraw); endStroke(); }
     gridBtn.addEventListener("click", toggleGrid);
     hoverBtn.addEventListener("click", toggleHover);
 
     // Changing size scales the drawing instead of wiping it.
     function resize(n) {
-      if (n === N) return;
+      if (n === N || busy) { sizeSel.value = String(N); return; }
       snapshot();
       const old = cells, oldOrder = order, M = N;
       cells = new Uint8Array(n * n); order = new Uint32Array(n * n);
@@ -422,7 +381,7 @@
       }
       N = n; draw();
     }
-    document.getElementById("sizeSel").addEventListener("change", e => resize(+e.target.value));
+    sizeSel.addEventListener("change", e => resize(+e.target.value));
 
     // Clear: pixels drop out in random order.
     function clear() {
@@ -444,8 +403,33 @@
     }
     document.getElementById("clearBtn").addEventListener("click", clear);
 
+    /* ---------- Photo to pixel art ---------- */
+    const photoIn = document.getElementById("photoIn");
+    document.getElementById("photoBtn").addEventListener("click", () => { if (!busy) photoIn.click(); });
+    async function loadImage(file) {
+      if (window.createImageBitmap) { try { return await createImageBitmap(file); } catch (e) { /* try the slow way */ } }
+      return new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(file); });
+    }
+    photoIn.addEventListener("change", async () => {
+      const file = photoIn.files[0]; photoIn.value = "";
+      if (!file || busy) return;
+      let img;
+      try { img = await loadImage(file); } catch (e) { Etch.toast("Couldn't open that photo."); return; }
+      // Photos need detail, so small grids go up to 48 × 48.
+      const n = N < 48 ? 48 : N;
+      const out = Etch.photoToCells(img, n);
+      snapshot();
+      N = n; sizeSel.value = String(n);
+      cells = out; order = new Uint32Array(n * n); tick = 0;
+      for (let i = 0; i < cells.length; i++) if (cells[i]) order[i] = ++tick;
+      photoTick = tick;
+      draw();
+      Etch.toast("Done. Draw on top of it if you like.");
+    });
+
+    /* ---------- Keyboard ---------- */
     addEventListener("keydown", e => {
-      if (e.target.closest("textarea, input, select") || !document.getElementById("shareBox").hidden) return;
+      if (e.target.closest("textarea, input, select") || document.querySelector(".overlay:not([hidden])")) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { undo(); e.preventDefault(); return; }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const k = e.key.toLowerCase();
@@ -458,147 +442,43 @@
       else if (/^[1-9]$/.test(k)) pickColor(+k);
     });
 
-    /* ---------- Share links: drawing + note packed into the URL ---------- */
-    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-    function pushVarint(out, n) { while (n > 127) { out.push((n & 127) | 128); n >>>= 7; } out.push(n); }
-    function readVarint(buf, st) { let n = 0, s = 0, b; do { if (st.i >= buf.length) throw 0; b = buf[st.i++]; n |= (b & 127) << s; s += 7; } while (b & 128); return n >>> 0; }
-    const zig = n => (n << 1) ^ (n >> 31), unzig = n => (n >>> 1) ^ -(n & 1);
-    const toB64 = bytes => { let s = ""; bytes.forEach(b => s += String.fromCharCode(b)); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
-    const fromB64 = str => { str = str.replace(/-/g, "+").replace(/_/g, "/"); const s = atob(str); return Uint8Array.from(s, c => c.charCodeAt(0)); };
-    async function pipe(bytes, Stream) { return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new Stream("deflate-raw"))).arrayBuffer()); }
-
-    // Painted cells in the order they were last drawn, so the replay follows how it was made.
-    function sequence() {
+    /* ---------- Sharing and replay (the rest lives in shared.js) ---------- */
+    // Painted cells in the order they were last drawn. Photo cells come first, in reading order.
+    function currentEntry() {
       const idx = []; for (let i = 0; i < cells.length; i++) if (cells[i]) idx.push(i);
-      return idx.sort((a, b) => order[a] - order[b]).map(i => [i, cells[i]]);
+      if (!idx.length) return null;
+      idx.sort((a, b) => order[a] - order[b]);
+      let photoK = 0; while (photoK < idx.length && order[idx[photoK]] <= photoTick) photoK++;
+      return { kind: "pixel", n: N, photoK, seq: idx.map(i => [i, cells[i]]) };
     }
-    async function encode(seq, note) {
-      const out = [2, N];
-      const msg = new TextEncoder().encode(note || "");
-      pushVarint(out, msg.length); msg.forEach(b => out.push(b));
-      pushVarint(out, seq.length);
-      let prev = 0;
-      for (const [i, c] of seq) { pushVarint(out, zig(i - prev)); out.push(c); prev = i; }
-      const raw = new Uint8Array(out);
-      if (window.CompressionStream) { try { return "z" + toB64(await pipe(raw, CompressionStream)); } catch (e) {} }
-      return "r" + toB64(raw);
-    }
-    async function decode(code) {
-      let bytes = fromB64(code.slice(1));
-      if (code[0] === "z") bytes = await pipe(bytes, DecompressionStream);
-      if (bytes[0] !== 2) throw 0;
-      const n = clamp(bytes[1], 4, 64), st = { i: 2 };
-      const mlen = readVarint(bytes, st);
-      const note = new TextDecoder().decode(bytes.slice(st.i, st.i + mlen)).slice(0, 140); st.i += mlen;
-      const count = readVarint(bytes, st), seq = [];
-      let i = 0;
-      for (let k = 0; k < count && k < n * n * 4; k++) {
-        i += unzig(readVarint(bytes, st)); const c = bytes[st.i++];
-        if (i >= 0 && i < n * n && c > 0 && c < PAL.length) seq.push([i, c]);
-      }
-      return { n, note, seq };
-    }
-
-    const shareBox = document.getElementById("shareBox");
-    const noteInput = document.getElementById("noteInput");
-    const linkArea = document.getElementById("linkArea");
-    const linkOut = document.getElementById("linkOut");
-    const makeLink = document.getElementById("makeLink");
-    const copyLink = document.getElementById("copyLink");
-    const nativeShare = document.getElementById("nativeShare");
-    const shareMsg = document.getElementById("shareMsg");
-
-    document.getElementById("shareBtn").addEventListener("click", () => {
-      if (!cells.some(Boolean)) { toast("Draw something first."); return; }
-      linkArea.hidden = true; copyLink.hidden = true; nativeShare.hidden = true; makeLink.hidden = false; shareMsg.textContent = "";
-      shareBox.hidden = false; noteInput.focus();
-    });
-    document.getElementById("cancelShare").addEventListener("click", () => { shareBox.hidden = true; });
-    shareBox.addEventListener("click", e => { if (e.target === shareBox) shareBox.hidden = true; });
-    makeLink.addEventListener("click", async () => {
-      const code = await encode(sequence(), noteInput.value.trim());
-      const url = location.origin + location.pathname + "#d=" + code;
-      linkOut.value = url; linkArea.hidden = false; makeLink.hidden = true; copyLink.hidden = false;
-      if (navigator.share) nativeShare.hidden = false;
-      shareMsg.textContent = "The whole drawing lives in the link, so nothing is uploaded anywhere.";
-      linkOut.select();
-    });
-    copyLink.addEventListener("click", async () => {
-      try { await navigator.clipboard.writeText(linkOut.value); }
-      catch (e) { linkOut.select(); document.execCommand("copy"); }
-      toast("Link copied.");
-    });
-    nativeShare.addEventListener("click", () => { navigator.share({ title: "I made you something", url: linkOut.value }).catch(() => {}); });
-
-    /* ---------- Replay a shared drawing ---------- */
-    function replay(n, seq) {
-      busy = true;
-      N = n; document.getElementById("sizeSel").value = String(clamp(n, 16, 64));
-      cells = new Uint8Array(N * N); order = new Uint32Array(N * N); tick = 0;
-      const total = seq.length, dur = clamp(total * 22, 1800, 9000), pop = 160;
+    function replay(e, done) {
+      busy = true; hoverCell = -1;
+      N = e.n; sizeSel.value = String(N);
+      cells = new Uint8Array(N * N); order = new Uint32Array(N * N); tick = 0; photoTick = 0;
+      const tl = Etch.pixelTimeline(e);
       let t0 = null;
       (function frame(t) {
         if (t0 == null) t0 = t;
         const el = t - t0;
-        const shown = Math.min(total, Math.floor(el / dur * total) + 1);
-        ctx.fillStyle = BG; ctx.fillRect(0, 0, S, S);
-        for (let k = 0; k < shown; k++) {
-          const [i, c] = seq[k], at = k / total * dur;
-          rect(i, c, (el - at) / pop);
-        }
-        gridLines();
-        if (el < dur + pop) requestAnimationFrame(frame);
-        else {
-          for (const [i, c] of seq) { cells[i] = c; order[i] = ++tick; }
-          busy = false; draw();
-          hearts();
-          setTimeout(() => toast("Your turn. Clear it and draw one back."), 1400);
-        }
+        Etch.drawPixels(ctx, S, N, tl.items, tl.times, el, { grid: showGrid });
+        if (el < tl.total + 160) { requestAnimationFrame(frame); return; }
+        e.seq.forEach(([i, c]) => { cells[i] = c; order[i] = ++tick; });
+        photoTick = Math.min(e.photoK || 0, tick);
+        busy = false; draw();
+        if (done) done();
       })(performance.now());
     }
-    function hearts() {
-      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      const svg = c => '<svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path fill="' + c + '" d="M1 1h2v1H1zM5 1h2v1H5zM0 2h8v2H0zM1 4h6v1H1zM2 5h4v1H2zM3 6h2v1H3z"/></svg>';
-      const cols = ["#ff4d6d", "#ff8fab", "#ffb38a", "#9b5de5", "#ff4d6d"];
-      for (let k = 0; k < 18; k++) {
-        const h = document.createElement("div");
-        h.className = "floaty"; h.innerHTML = svg(cols[k % cols.length]);
-        const size = 16 + Math.random() * 22;
-        h.style.left = (Math.random() * 96) + "vw"; h.style.width = h.style.height = size + "px";
-        h.style.setProperty("--drift", (Math.random() * 80 - 40) + "px");
-        h.style.animationDuration = (3 + Math.random() * 2.5) + "s";
-        h.style.animationDelay = (Math.random() * 1.2) + "s";
-        document.body.appendChild(h);
-        setTimeout(() => h.remove(), 7000);
-      }
-    }
 
-    /* ---------- Toast ---------- */
-    let toastTimer;
-    function toast(msg) {
-      const t = document.getElementById("toast");
-      t.textContent = msg; t.classList.add("show");
-      clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
-    }
-
-    /* ---------- Start ---------- */
     setup();
     new ResizeObserver(setup).observe(board);
 
-    const m = location.hash.match(/^#d=([zr][A-Za-z0-9_-]+)$/);
-    if (m) {
-      decode(m[1]).then(({ n, note, seq }) => {
-        if (!seq.length) return;
-        const intro = document.getElementById("intro");
-        if (note) { const el = document.getElementById("introNote"); el.textContent = "“" + note + "”"; el.hidden = false; }
-        intro.hidden = false;
-        document.getElementById("watchBtn").addEventListener("click", () => {
-          intro.hidden = true;
-          history.replaceState(null, "", location.pathname);
-          replay(n, seq);
-        }, { once: true });
-      }).catch(() => toast("That link looks broken."));
-    }
+    Etch.init({
+      kind: "pixel",
+      isBusy: () => busy,
+      getEntry: currentEntry,
+      play: replay,
+      clearForReply: clear,
+    });
   })();
   </script>
 </body>
