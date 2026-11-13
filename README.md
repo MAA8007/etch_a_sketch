@@ -1,29 +1,25 @@
-# Etch-a-Sketch Project
+# Etch-a-Sketch
 
-This project is a simple web-based Etch-a-Sketch game. It allows users to create pixel art by toggling the color of grid squares as they hover over them with their mouse. The application provides an eraser feature and the ability to adjust the grid size.
+A drawing toy in the browser with two modes. Live at https://maa8007.github.io/etch_a_sketch/
 
-## Features
+## Pixels (`index.html`)
 
-- **Dynamic Grid**: Users can adjust the size of the grid with a range input slider.
-- **Drawing and Erasing**: Click and drag over grid squares to draw. The application also includes an eraser tool.
-- **Responsive Design**: The grid adjusts to fit the screen size, making it usable on both desktop and mobile devices.
+Pixel art on a grid, grown from the original hover-to-draw version.
 
-## How to Use
+- Draw by moving the mouse over the grid (or click and drag with Hover draw off). Touch works too.
+- 12 colours, a rainbow brush, flood fill, eraser and undo.
+- Grid sizes from 16 × 16 to 64 × 64. Changing size rescales the drawing.
+- Keyboard: `1`–`9` colours, `B` pen, `R` rainbow, `F` fill, `E` eraser, `G` grid lines, `Ctrl/Cmd+Z` undo.
 
-1. Open the HTML file in a web browser to start the application.
-2. Adjust the grid size using the range slider.
-3. Use your mouse to draw on the grid. 
-4. Toggle the eraser by checking the checkbox, then hover over grid squares to erase.
+## Toy (`toy.html`)
 
-## Implementation
+A classic red Etch A Sketch.
 
-- The project is implemented using HTML, CSS, and JavaScript.
-- Grid creation and event handling are managed in JavaScript.
-- The layout and styling are defined in CSS.
+- Draw with the arrow keys or WASD (Shift for fine lines), by dragging the knobs, or on the screen.
+- Shake to erase with the button, or by shaking your phone.
 
-## Screenshot
-<img width="578" alt="image" src="https://github.com/MAA8007/etch_a_sketch/assets/106858270/2604c2d0-6dbb-472f-a4f6-fb6e408d6eaf">
+## Sharing
 
----
+Both modes can turn a drawing into a link, with an optional note. The drawing is compressed into the URL itself, so nothing is stored on a server. Opening the link replays the drawing: pixel by pixel in Pixels mode, line by line in Toy mode.
 
-Enjoy creating pixel art with this simple Etch-a-Sketch game!
+Plain HTML, CSS and JavaScript, no build step.
